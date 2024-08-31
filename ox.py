@@ -12,9 +12,9 @@ CANVAS_HEIGHT = 480 # 盤面の縦幅(px)
 SQUARE_WIDTH = CANVAS_WIDTH // BOARD_SIZE # マスの横幅(px)
 SQUARE_HEIGHT = CANVAS_HEIGHT // BOARD_SIZE # マスの縦幅(px)
 
-O = 1
-X = 2
-OX_LIST = [O, X]
+BLACK = 1
+WHITE = 2
+COLOR_LIST = [BLACK, WHITE]
 
 class Phase(Enum):
     STANDBY = 0
@@ -63,9 +63,9 @@ def display_board(): # 盤面を表示する関数
             Y = y * SQUARE_HEIGHT
             
             # マスに円を描写
-            if board[y][x] == O:
+            if board[y][x] == BLACK:
                 cvs.create_oval(X+10, Y+10, X+SQUARE_WIDTH-10, Y+SQUARE_HEIGHT-10, fill="black", width=0)
-            elif board[y][x] == X:
+            elif board[y][x] == WHITE:
                 cvs.create_oval(X+10, Y+10, X+SQUARE_WIDTH-10, Y+SQUARE_HEIGHT-10, fill="white", width=0)
     cvs.update()
 
@@ -78,36 +78,36 @@ def init_board(): # 盤面を初期化する関数
 def match_over(): # 勝負がついたかどうか判定する関数
     # 横で一列揃ったか判定
     for y in range(BOARD_SIZE):
-        check_ox = board[y][0]
+        check_color = board[y][0]
         for x in range(1, BOARD_SIZE):
-            if board[y][x] != check_ox:
+            if board[y][x] != check_color:
                 continue
-            return check_ox
+            return check_color
     
     # 縦で一列揃ったか判定
     for x in range(BOARD_SIZE):
-        check_ox = board[0][x]
+        check_color = board[0][x]
         for y in range(1, BOARD_SIZE):
-            if board[y][x] != check_ox:
+            if board[y][x] != check_color:
                 continue
-            return check_ox
+            return check_color
     
     # 斜めで一列揃ったか判定
-    check_ox = board[0][0]
+    check_color = board[0][0]
     for i in range(1, BOARD_SIZE):
-        if board[i][i] != check_ox:
+        if board[i][i] != check_color:
             continue
-        return check_ox
-    check_ox = board[BOARD_SIZE-1][0]
+        return check_color
+    check_color = board[BOARD_SIZE-1][0]
     for i in range(1, BOARD_SIZE):
-        if board[BOARD_SIZE-1-i][i] != check_ox:
+        if board[BOARD_SIZE-1-i][i] != check_color:
             continue
-        return check_ox
+        return check_color
     
     return 0
     
-def place_ox(x, y, ox): # OXを置く関数
-    board[y][x] = ox
+def place_disc(x, y, color): # OXを置く関数
+    board[y][x] = color
 
 def is_placeable(x, y): # そのマスにOXを置けるか判定する関数
     if board[y][x] > 0:
@@ -138,17 +138,17 @@ def load(): # 盤面をロード (CPU用)
         for x in range(BOARD_SIZE):
             board[y][x] = back[y][x]
 
-def simulate(ox): # 現在の盤面からランダムに置く試行をする関数
+def simulate(color): # 現在の盤面からランダムに置く試行をする関数
     while True:
         if placeable_square_existence() == False or match_over() > 0:
             break
-        ox = 3 - ox
+        color = 3 - color
         k = random.randint(0, (len(placeable_square_X)-1))
         x = placeable_square_X[k]
         y = placeable_square_Y[k]
-        place_ox(x, y, ox)
+        place_disc(x, y, color)
 
-def computer(ox, loops): # CPUが打つ手を探索する関数
+def computer(color, loops): # CPUが打つ手を探索する関数
     global msg
     win = [0]*(BOARD_SIZE * BOARD_SIZE)
     
@@ -162,9 +162,9 @@ def computer(ox, loops): # CPUが打つ手を探索する関数
                 win[y*BOARD_SIZE+x] = 1
                 
                 for i in range(loops):
-                    place_ox(x, y, ox)
-                    simulate(ox)
-                    if match_over() == ox:
+                    place_disc(x, y, color)
+                    simulate(color)
+                    if match_over() == color:
                         win[y*BOARD_SIZE+x] += 1
                     load()
     
@@ -193,14 +193,14 @@ def main():
             mc = 0
             if mx == 0 and my == 2:
                 init_board()
-                OX_LIST[0] = O
-                OX_LIST[1] = X
+                COLOR_LIST[0] = BLACK
+                COLOR_LIST[1] = WHITE
                 turn = 0
                 proc = Phase.MAIN
             if mx == 2 and my == 2:
                 init_board()
-                OX_LIST[0] = X
-                OX_LIST[1] = O
+                COLOR_LIST[0] = WHITE
+                COLOR_LIST[1] = BLACK
                 turn = 1
                 proc = Phase.MAIN
     
@@ -209,13 +209,13 @@ def main():
             msg = "Your Turn"
             if mc == 1:
                 if is_placeable(mx, my):
-                    place_ox(mx, my, OX_LIST[turn])
+                    place_disc(mx, my, COLOR_LIST[turn])
                     proc = Phase.END
                 mc = 0
         else:
             msg = "CPU's Turn"
-            cx, cy = computer(OX_LIST[turn], 100)
-            place_ox(cx, cy, OX_LIST[turn])
+            cx, cy = computer(COLOR_LIST[turn], 100)
+            place_disc(cx, cy, COLOR_LIST[turn])
             proc = Phase.END
     
     elif proc == Phase.END:
@@ -227,9 +227,9 @@ def main():
             proc = Phase.MAIN
     
     elif proc == Phase.RESULT:
-        if OX_LIST[0] == match_over():
+        if COLOR_LIST[0] == match_over():
             tkinter.messagebox.showinfo("", "YOU WIN!")
-        elif OX_LIST[1] == match_over():
+        elif COLOR_LIST[1] == match_over():
             tkinter.messagebox.showinfo("", "YOU LOSE...")
         else:
             tkinter.messagebox.showinfo("", "DRAW")
