@@ -73,7 +73,6 @@ def init_board(): # 盤面を初期化する関数
     for y in range(BOARD_SIZE):
         for x in range(BOARD_SIZE):
             board[y][x] = 0
-    board[0][0] = 0
 
 def match_over(): # 勝負がついたかどうか判定する関数
     # 横で一列揃ったか判定
@@ -221,7 +220,7 @@ def main():
     elif proc == Phase.END:
         msg = ""
         turn = 1 - turn
-        if match_over() > 0 or placeable_square_existence() == False:
+        if placeable_square_existence() == False:
             proc = Phase.RESULT
         else:
             proc = Phase.MAIN
