@@ -6,7 +6,7 @@ from enum import Enum
 FS = ("Times New Roman", 20)
 FL = ("Times New Roman", 40)
 
-BOARD_SIZE = 3
+BOARD_SIZE = 5
 CANVAS_WIDTH = 480 # 盤面の横幅(px)
 CANVAS_HEIGHT = 480 # 盤面の縦幅(px)
 SQUARE_WIDTH = CANVAS_WIDTH // BOARD_SIZE # マスの横幅(px)
@@ -48,7 +48,7 @@ def click(e): # クリックされた時に呼び出し
 
 def display_board(): # 盤面を表示する関数
     cvs.delete("all") # 初期化
-    cvs.create_text(SQUARE_WIDTH*1.5, CANVAS_HEIGHT+30, text=msg, fill="silver", font=FS) # 下部にメッセージを表示
+    cvs.create_text(SQUARE_WIDTH*(BOARD_SIZE/2), CANVAS_HEIGHT+30, text=msg, fill="silver", font=FS) # 下部にメッセージを表示
     
     for i in range(BOARD_SIZE):
         X = i * SQUARE_WIDTH
@@ -76,32 +76,45 @@ def init_board(): # 盤面を初期化する関数
 
 def match_over(): # 勝負がついたかどうか判定する関数
     # 横で一列揃ったか判定
+    check_color = -1
     for y in range(BOARD_SIZE):
-        check_color = board[y][0]
-        for x in range(1, BOARD_SIZE):
-            if board[y][x] != check_color:
-                continue
-            return check_color
+        if board[y][0] > 0:
+            check_color = board[y][0]
+            for x in range(BOARD_SIZE):
+                if board[y][x] != check_color:
+                    break
+                if x == BOARD_SIZE-1:
+                    return check_color
     
     # 縦で一列揃ったか判定
+    check_color = -1
     for x in range(BOARD_SIZE):
-        check_color = board[0][x]
-        for y in range(1, BOARD_SIZE):
-            if board[y][x] != check_color:
-                continue
-            return check_color
+        if board[0][x] > 0:
+            check_color = board[0][x]
+            for y in range(1, BOARD_SIZE):
+                if board[y][x] != check_color:
+                    break
+                if y == BOARD_SIZE-1:
+                    return check_color
     
     # 斜めで一列揃ったか判定
-    check_color = board[0][0]
-    for i in range(1, BOARD_SIZE):
-        if board[i][i] != check_color:
-            continue
-        return check_color
-    check_color = board[BOARD_SIZE-1][0]
-    for i in range(1, BOARD_SIZE):
-        if board[BOARD_SIZE-1-i][i] != check_color:
-            continue
-        return check_color
+    check_color = -1
+    if board[0][0] > 0:
+        check_color = board[0][0]
+        for i in range(1, BOARD_SIZE):
+            if board[i][i] != check_color:
+                break
+            if i == BOARD_SIZE-1:
+                return check_color
+    
+    check_color = -1
+    if board[BOARD_SIZE-1][0] > 0:
+        check_color = board[BOARD_SIZE-1][0]
+        for i in range(1, BOARD_SIZE):
+            if board[BOARD_SIZE-1-i][i] != check_color:
+                break
+            if i == BOARD_SIZE-1:
+                return check_color
     
     return 0
     
@@ -164,6 +177,8 @@ def computer(color, loops): # CPUが打つ手を探索する関数
                     place_disc(x, y, color)
                     simulate(color)
                     if match_over() == color:
+                        win[y*BOARD_SIZE+x] += 2
+                    elif match_over == 0:
                         win[y*BOARD_SIZE+x] += 1
                     load()
     
@@ -184,19 +199,18 @@ def main():
 
     if proc == Phase.STANDBY:
         msg = "先手 or 後手？"
-        cvs.create_text(SQUARE_WIDTH*1.5, SQUARE_HEIGHT*1, text="Tic-Tac-Toe", fill="gold", font=FL)
-        cvs.create_text(SQUARE_WIDTH//2, SQUARE_HEIGHT*2.5, text="先手(O)", fill="lime", font=FS)
-        cvs.create_text(SQUARE_WIDTH*2.5, SQUARE_HEIGHT*2.5, text="後手(X)", fill="lime", font=FS)
-
+        cvs.create_text(SQUARE_WIDTH*(BOARD_SIZE/2), SQUARE_HEIGHT*(BOARD_SIZE//2), text="Tic-Tac-Toe", fill="gold", font=FL)
+        cvs.create_text(SQUARE_WIDTH//2, SQUARE_HEIGHT*(BOARD_SIZE-0.5), text="先手(黒)", fill="lime", font=FS)
+        cvs.create_text(SQUARE_WIDTH*(BOARD_SIZE-0.5), SQUARE_HEIGHT*(BOARD_SIZE-0.5), text="後手(白)", fill="lime", font=FS)
         if mc == 1:
             mc = 0
-            if mx == 0 and my == 2:
+            if mx == 0 and my == BOARD_SIZE-1:
                 init_board()
                 COLOR_LIST[0] = BLACK
                 COLOR_LIST[1] = WHITE
                 turn = 0
                 proc = Phase.MAIN
-            if mx == 2 and my == 2:
+            if mx == BOARD_SIZE-1 and my == BOARD_SIZE-1:
                 init_board()
                 COLOR_LIST[0] = WHITE
                 COLOR_LIST[1] = BLACK
@@ -220,7 +234,7 @@ def main():
     elif proc == Phase.END:
         msg = ""
         turn = 1 - turn
-        if placeable_square_existence() == False:
+        if match_over() > 0 or placeable_square_existence() == False:
             proc = Phase.RESULT
         else:
             proc = Phase.MAIN
